@@ -14,6 +14,7 @@ from .ui import InputField, Button, Toggle
 
 from gyakuenki_interfaces.msg import ProjectedObjects, ProjectedObject
 from aruku_interfaces.msg import Point2
+from atama_interfaces.msg import Head
 from kansei_interfaces.msg import Status, Axis
 from basho_interfaces.msg import Particles
 
@@ -129,6 +130,12 @@ class SoccerSim(Node):
         self.pub_imu = self.create_publisher(
             Status,
             "measurement/status",
+            10
+        )
+
+        self.pub_head = self.create_publisher(
+            Head,
+            "head/set_head_data",
             10
         )
 
@@ -251,6 +258,15 @@ class SoccerSim(Node):
             self.robot.omega = 2.0
         if keys[pygame.K_a]:
             self.robot.omega = -2.0
+        if keys[pygame.K_LEFT]:
+            self.robot.head_pan += 2.5 * dt
+        if keys[pygame.K_RIGHT]:
+            self.robot.head_pan -= 2.5 * dt
+
+        self.robot.head_pan = max(
+            -1.57,
+            min(1.57, self.robot.head_pan)
+        )
 
         self.robot.update(dt)
 
@@ -307,6 +323,13 @@ class SoccerSim(Node):
 
         self.pub_imu.publish(imu)
 
+        head_msg = Head()
+        head_msg.pan_angle = math.degrees(self.robot.head_pan)
+        head_msg.tilt_angle = 0.0
+        head_msg.distance = 0.0
+
+        self.pub_head.publish(head_msg)
+
         # ---------------- Drawing ----------------
         self.screen.fill((15, 20, 30))  # background
 
@@ -350,8 +373,8 @@ class SoccerSim(Node):
         for obs in observations:
             o = ProjectedObject()
 
-            r = obs["range"]
-            b = obs["bearing"]
+            r = obs["range_body"]
+            b = obs["bearing_body"]
 
             rel_x = r * math.cos(b)
             rel_y = r * math.sin(b)

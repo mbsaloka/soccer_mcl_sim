@@ -7,6 +7,7 @@ class Robot:
         self.x = 450.0
         self.y = 300.0
         self.theta = 0.0  # rad
+        self.head_pan = 0.0  # rad
 
         self.belief_x = self.x
         self.belief_y = self.y
@@ -32,9 +33,15 @@ class Robot:
 
         pygame.draw.circle(screen, (0, 0, 0), (px, py), R, 2)
 
+        # arah body
         hx = px + R * math.cos(self.theta)
         hy = py + R * math.sin(self.theta)
         pygame.draw.line(screen, (0, 0, 0), (px, py), (hx, hy), 2)
+
+        # arah head
+        hx2 = px + (R + 10) * math.cos(self.theta - self.head_pan)
+        hy2 = py + (R + 10) * math.sin(self.theta - self.head_pan)
+        pygame.draw.line(screen, (255, 0, 0), (px, py), (hx2, hy2), 2)
 
 
     def draw_belief(self, screen, scale=1.0):

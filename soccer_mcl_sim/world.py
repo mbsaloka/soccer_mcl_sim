@@ -9,38 +9,56 @@ class Field:
         self.length = 900
 
         self.landmarks_L = [
-            (0.0, 0.0),
-            (0.0, 600.0),
-            (100.0, 50.0),
-            (100.0, 550.0),
-            (900.0, 0.0),
-            (900.0, 600.0),
-            (800.0, 50.0),
-            (800.0, 550.0),
+            (0.0, 0.0), # kiri atas
+            (0.0, 600.0), # kiri bawah
+            # (100.0, 50.0), # area goal kiri atas
+            # (100.0, 550.0), # area goal kiri bawah
+            (900.0, 0.0), # kanan atas
+            (900.0, 600.0), # kanan bawah
+            # (800.0, 50.0), # area goal kanan atas
+            # (800.0, 550.0), # area goal kanan bawah
+            (200.0, 100.0), # penalty area kiri atas
+            (200.0, 500.0), # penalty area kiri bawah
+            (700.0, 100.0), # penalty area kanan atas
+            (700.0, 500.0), # penalty area kanan bawah
+            (100.0, 150.0), # goal area kiri atas
+            (100.0, 450.0), # goal area kiri bawah
+            (800.0, 150.0), # goal area kanan atas
+            (800.0, 450.0), # goal area kanan bawah
         ]
 
         self.landmarks_T = [
-            (0.0, 50.0),
-            (0.0, 550.0),
-            (450.0, 0.0),
-            (450.0, 600.0),
-            (900.0, 50.0),
-            (900.0, 550.0),
+            # (0.0, 50.0), # kiri atas
+            # (0.0, 550.0), # kiri bawah
+            (450.0, 0.0), # tengah atas
+            (450.0, 600.0), # tengah bawah
+            # (900.0, 50.0), # kanan atas
+            # (900.0, 550.0), # kanan bawah
+            (0.0, 100.0), # penalty area kiri atas
+            (0.0, 500.0), # penalty area kiri bawah
+            (900.0, 100.0), # penalty area kanan atas
+            (900.0, 500.0), # penalty area kanan bawah
+            (0.0, 150.0), # goal area kiri atas
+            (0.0, 450.0), # goal area kiri bawah
+            (900.0, 150.0), # goal area kanan atas
+            (900.0, 450.0), # goal area kanan bawah
         ]
 
         self.landmarks_X = [
-            (210, 300),
-            (690, 300),
-            (450, 300),
-            (450, 375),
-            (450, 225),
+            # (210, 300), # titik penalti kiri
+            # (690, 300), # titik penalti kanan
+            (450, 300), # tengah lapangan
+            (450, 375), # tengah lapangan bawah
+            (450, 225), # tengah lapangan atas
+            (150, 300), # titik penalti kiri
+            (750, 300), # titik penalti kanan
         ]
 
         self.landmarks_goalpost = [
-            (0.0, 170.0),
-            (0.0, 430.0),
-            (900.0, 170.0),
-            (900.0, 430.0),
+            (0.0, 210.0),
+            (0.0, 390.0),
+            (900.0, 210.0),
+            (900.0, 390.0),
         ]
 
     def draw(self, screen, scale=1.0, offset_x=0, offset_y=0):
@@ -95,31 +113,69 @@ class Field:
             LINE_W,
         )
 
-        goal_area_w = int(100 * scale)
-        goal_area_h = int(500 * scale)
+        # =============================
+        # Penalty Area (Kotak Besar)
+        # =============================
 
-        # Left goal area
+        penalty_w = int(200 * scale)
+        penalty_h = int(400 * scale)
+
+        # Left penalty
         pygame.draw.rect(
             screen,
             WHITE,
             pygame.Rect(
                 offset_x,
-                offset_y + (FIELD_W - goal_area_h) // 2,
-                goal_area_w,
-                goal_area_h,
+                offset_y + int(100 * scale),
+                penalty_w,
+                penalty_h,
             ),
             LINE_W,
         )
 
-        # Right goal area
+        # Right penalty
         pygame.draw.rect(
             screen,
             WHITE,
             pygame.Rect(
-                offset_x + FIELD_L - goal_area_w,
-                offset_y + (FIELD_W - goal_area_h) // 2,
-                goal_area_w,
-                goal_area_h,
+                offset_x + FIELD_L - penalty_w,
+                offset_y + int(100 * scale),
+                penalty_w,
+                penalty_h,
+            ),
+            LINE_W,
+        )
+
+
+        # =============================
+        # Goal Area (Kotak Kecil)
+        # =============================
+
+        goal_w = int(100 * scale)
+        goal_h = int(300 * scale)
+
+        # Left goal
+        pygame.draw.rect(
+            screen,
+            WHITE,
+            pygame.Rect(
+                offset_x,
+                offset_y + int(150 * scale),
+                goal_w,
+                goal_h,
+            ),
+            LINE_W,
+        )
+
+        # Right goal
+        pygame.draw.rect(
+            screen,
+            WHITE,
+            pygame.Rect(
+                offset_x + FIELD_L - goal_w,
+                offset_y + int(150 * scale),
+                goal_w,
+                goal_h,
             ),
             LINE_W,
         )
@@ -128,14 +184,14 @@ class Field:
         pygame.draw.circle(
             screen,
             WHITE,
-            (offset_x + int(210 * scale), offset_y + FIELD_W // 2),
+            (offset_x + int(150 * scale), offset_y + FIELD_W // 2),
             8,
         )
 
         pygame.draw.circle(
             screen,
             WHITE,
-            (offset_x + int(690 * scale), offset_y + FIELD_W // 2),
+            (offset_x + int(750 * scale), offset_y + FIELD_W // 2),
             8,
         )
 

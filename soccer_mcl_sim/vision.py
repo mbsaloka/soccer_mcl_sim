@@ -14,6 +14,7 @@ class VisionSensor:
         bearing_noise_std_deg=1.0,
         range_noise_gain=0.02,
         bearing_noise_gain_deg=0.01,
+        false_type_prob=0.2,
     ):
         self.fov = math.radians(fov_deg)
         self.max_range = max_range
@@ -24,6 +25,23 @@ class VisionSensor:
 
         self.range_noise_gain = range_noise_gain
         self.bearing_noise_gain = math.radians(bearing_noise_gain_deg)
+
+        self.false_type_prob = false_type_prob
+
+    def _maybe_flip_intersection_type(self, lm_type):
+        """
+        Simulate false classification between L/T/X intersections.
+        """
+        intersection_types = ["L-Intersection", "T-Intersection", "X-Intersection"]
+
+        if lm_type not in intersection_types:
+            return lm_type
+
+        if random.random() < self.false_type_prob:
+            other_types = [t for t in intersection_types if t != lm_type]
+            return random.choice(other_types)
+
+        return lm_type
 
     def sense(self, robot, field, enable_noise=True):
         observations = []
@@ -39,37 +57,46 @@ class VisionSensor:
             all_landmarks.append(("goalpost", p))
 
         for lm_type, (lx, ly) in all_landmarks:
-            dx = lx - robot.x
-            dy = ly - robot.y
+            # --- jarak relatif terhadap body frame ---
+            dx_body = lx - robot.x
+            dy_body = ly - robot.y
+            range_body = math.hypot(dx_body, dy_body)
+            bearing_body = math.atan2(dy_body, dx_body) - robot.theta
+            bearing_body = self._wrap_angle(bearing_body)
 
-            true_range = math.hypot(dx, dy)
-            if true_range > self.max_range:
+            # --- arah relatif sensor (head pan) untuk FoV ---
+            theta_sensor = robot.theta - robot.head_pan
+            bearing_sensor = math.atan2(dy_body, dx_body) - theta_sensor
+            bearing_sensor = self._wrap_angle(bearing_sensor)
+
+            # filter FoV sensor
+            if abs(bearing_sensor) > self.fov / 2 or range_body > self.max_range:
                 continue
 
-            bearing = math.atan2(dy, dx) - robot.theta
-            bearing = self._wrap_angle(bearing)
-
-            if abs(bearing) > self.fov / 2:
-                continue
-
+            # --- tambahkan noise pada sensor reading ---
             if enable_noise:
-                sigma_r = self.range_noise_std + self.range_noise_gain * true_range
-                sigma_b = self.bearing_noise_std + self.bearing_noise_gain * true_range
+                sigma_r = self.range_noise_std + self.range_noise_gain * range_body
+                sigma_b = self.bearing_noise_std + self.bearing_noise_gain * range_body
 
-                noisy_range = true_range + random.gauss(0.0, sigma_r)
-                noisy_bearing = bearing + random.gauss(0.0, sigma_b)
+                noisy_range = range_body + random.gauss(0.0, sigma_r)
+                noisy_bearing = bearing_sensor + random.gauss(0.0, sigma_b)
             else:
-                noisy_range = true_range
-                noisy_bearing = bearing
+                noisy_range = range_body
+                noisy_bearing = bearing_sensor
+
+            observed_type = self._maybe_flip_intersection_type(lm_type)
+            if observed_type != lm_type:
+                print("FALSE DETECT:", lm_type, "->", observed_type)
 
             observations.append(
                 {
-                    "type": lm_type,
-                    "true_pos": (lx, ly),
-                    "true_range": true_range,
-                    "true_bearing": bearing,
+                    "type": observed_type,
+                    "true_type": lm_type,
+                    "range_body": range_body,
+                    "bearing_body": bearing_body,
                     "range": noisy_range,
                     "bearing": noisy_bearing,
+                    "true_pos_body": (dx_body, dy_body)
                 }
             )
 
@@ -86,8 +113,10 @@ class VisionSensor:
         cx = int(robot.x * scale)
         cy = int(robot.y * scale)
 
-        start_angle = robot.theta - self.fov / 2
-        end_angle = robot.theta + self.fov / 2
+        theta_sensor = robot.theta - robot.head_pan
+
+        start_angle = theta_sensor - self.fov / 2
+        end_angle = theta_sensor + self.fov / 2
 
         # FoV boundary
         for angle in [start_angle, end_angle]:
@@ -116,7 +145,7 @@ class VisionSensor:
 
         rx = robot.x
         ry = robot.y
-        rtheta = robot.theta
+        rtheta = robot.theta - robot.head_pan
 
         cx = int(rx * scale)
         cy = int(ry * scale)
