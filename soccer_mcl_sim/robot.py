@@ -50,11 +50,11 @@ class Robot:
 
         R = 14
 
-        pygame.draw.circle(screen, (255, 200, 0), (px, py), R, 2)
+        pygame.draw.circle(screen, (255, 0, 0), (px, py), R, 2)
 
         hx = px + R * math.cos(self.belief_theta)
         hy = py + R * math.sin(self.belief_theta)
-        pygame.draw.line(screen, (255, 200, 0), (px, py), (hx, hy), 2)
+        pygame.draw.line(screen, (255, 0, 0), (px, py), (hx, hy), 2)
 
     def kidnap(self, x, y, theta=None):
         self.x = x

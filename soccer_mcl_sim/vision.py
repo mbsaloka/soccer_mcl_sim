@@ -14,7 +14,7 @@ class VisionSensor:
         bearing_noise_std_deg=1.0,
         range_noise_gain=0.02,
         bearing_noise_gain_deg=0.01,
-        false_type_prob=0.2,
+        false_type_prob=0.5,
     ):
         self.fov = math.radians(fov_deg)
         self.max_range = max_range
@@ -85,8 +85,8 @@ class VisionSensor:
                 noisy_bearing = bearing_sensor
 
             observed_type = self._maybe_flip_intersection_type(lm_type)
-            if observed_type != lm_type:
-                print("FALSE DETECT:", lm_type, "->", observed_type)
+            # if observed_type != lm_type:
+            #     print("FALSE DETECT:", lm_type, "->", observed_type)
 
             observations.append(
                 {

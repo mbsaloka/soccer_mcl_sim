@@ -13,9 +13,9 @@ from .ui import InputField, Button, Toggle
 
 
 from gyakuenki_interfaces.msg import ProjectedObjects, ProjectedObject
-from aruku_interfaces.msg import Point2
+from aruku_interfaces.msg import Point2, Status as WalkingStatus
 from atama_interfaces.msg import Head
-from kansei_interfaces.msg import Status, Axis
+from kansei_interfaces.msg import Status as MeasurementStatus, Axis
 from basho_interfaces.msg import Particles
 
 class SoccerSim(Node):
@@ -127,8 +127,14 @@ class SoccerSim(Node):
             10
         )
 
+        self.pub_position = self.create_publisher(
+            WalkingStatus,
+            "walking/status",
+            10
+        )
+
         self.pub_imu = self.create_publisher(
-            Status,
+            MeasurementStatus,
             "measurement/status",
             10
         )
@@ -155,7 +161,7 @@ class SoccerSim(Node):
         )
 
         self.sub_imu = self.create_subscription(
-            Status,
+            MeasurementStatus,
             "measurement/status",
             self._imu_cb,
             10
@@ -271,7 +277,7 @@ class SoccerSim(Node):
         self.robot.update(dt)
 
         ODO_ALPHA_DIST = 0.05
-        ODO_SIGMA_MIN = 0.5
+        ODO_SIGMA_MIN = 0.0
         IMU_SIGMA_DEG = 1.0
 
         if self.just_kidnapped:
@@ -290,6 +296,13 @@ class SoccerSim(Node):
         # noisy odometry
         dx_noisy = dx_true + random.gauss(0, sigma_d)
         dy_noisy = dy_true + random.gauss(0, sigma_d)
+
+        if abs(dx_noisy) > 0.0 or abs(dy_noisy) > 0.0:
+            print(dx_noisy, dy_noisy)
+
+        # update robot pose belief
+        self.robot.belief_x += dx_noisy
+        self.robot.belief_y += dy_noisy
 
         msg = Point2()
         msg.x = dx_noisy
@@ -314,7 +327,7 @@ class SoccerSim(Node):
         while yaw_noisy < -180:
             yaw_noisy += 360
 
-        imu = Status()
+        imu = MeasurementStatus()
         imu.is_calibrated = True
         imu.orientation = Axis()
         imu.orientation.roll = 0.0
@@ -329,6 +342,12 @@ class SoccerSim(Node):
         head_msg.distance = 0.0
 
         self.pub_head.publish(head_msg)
+
+        walking_status = WalkingStatus()
+        walking_status.odometry.x = self.robot.belief_x
+        walking_status.odometry.y = self.robot.belief_y
+
+        self.pub_position.publish(walking_status)
 
         # ---------------- Drawing ----------------
         self.screen.fill((15, 20, 30))  # background
